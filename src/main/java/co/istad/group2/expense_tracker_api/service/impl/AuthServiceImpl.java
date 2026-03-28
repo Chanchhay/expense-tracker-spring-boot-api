@@ -1,10 +1,9 @@
-package co.istad.group2.expense_tracker_api.service;
+package co.istad.group2.expense_tracker_api.service.impl;
 
 import co.istad.group2.expense_tracker_api.domain.User;
 import co.istad.group2.expense_tracker_api.domain.enums.Role;
 import co.istad.group2.expense_tracker_api.dto.request.LoginRequest;
 import co.istad.group2.expense_tracker_api.dto.request.RegisterRequest;
-import co.istad.group2.expense_tracker_api.dto.response.AuthResponse;
 import co.istad.group2.expense_tracker_api.exception.BadRequestException;
 import co.istad.group2.expense_tracker_api.exception.ConflictException;
 import co.istad.group2.expense_tracker_api.exception.NotFoundException;
@@ -39,7 +38,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse register(RegisterRequest request) {
+    public String register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ConflictException("Email already exists");
         }
@@ -53,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.USER);
+        user.setIsActive(true);
 
         User savedUser = userRepository.save(user);
 
@@ -62,17 +62,15 @@ public class AuthServiceImpl implements AuthService {
                 Set.of(new SimpleGrantedAuthority("ROLE_" + savedUser.getRole().name()))
         );
 
-        String token = jwtService.generateToken(
+        return jwtService.generateToken(
                 userDetails,
                 savedUser.getRole().name(),
                 savedUser.getId()
         );
-
-        return new AuthResponse(token);
     }
 
     @Override
-    public AuthResponse login(LoginRequest request) {
+    public String login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.email(),
@@ -89,12 +87,10 @@ public class AuthServiceImpl implements AuthService {
                 Set.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );
 
-        String token = jwtService.generateToken(
+        return jwtService.generateToken(
                 userDetails,
                 user.getRole().name(),
                 user.getId()
         );
-
-        return new AuthResponse(token);
     }
 }
