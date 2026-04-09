@@ -9,6 +9,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
         name = "transactions",
         indexes = {
                 @Index(name = "idx_transactions_user", columnList = "user_id"),
+                @Index(name = "idx_transactions_account", columnList = "account_id"),
                 @Index(name = "idx_transactions_date", columnList = "transaction_date"),
                 @Index(name = "idx_transactions_type", columnList = "type")
         }
@@ -41,12 +44,16 @@ public class Transaction {
     @Column(name = "transaction_date", nullable = false)
     private LocalDate date;
 
-    @Column(length = 255)
+    @Column
     private String note;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
@@ -57,6 +64,9 @@ public class Transaction {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TransactionImage> images = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
@@ -69,4 +79,11 @@ public class Transaction {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+    public void addImage(TransactionImage image) {
+    if (this.images == null) {
+        this.images = new ArrayList<>();
+    }
+    this.images.add(image);
+    image.setTransaction(this);
+}
 }

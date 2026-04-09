@@ -1,7 +1,7 @@
 package co.istad.group2.expense_tracker_api.service.impl;
 
 import co.istad.group2.expense_tracker_api.domain.User;
-import co.istad.group2.expense_tracker_api.dto.response.UserResponse;
+import co.istad.group2.expense_tracker_api.dto.response.adminResponse.UserResponse;
 import co.istad.group2.expense_tracker_api.exception.NotFoundException;
 import co.istad.group2.expense_tracker_api.repository.UserRepository;
 import co.istad.group2.expense_tracker_api.service.UserService;

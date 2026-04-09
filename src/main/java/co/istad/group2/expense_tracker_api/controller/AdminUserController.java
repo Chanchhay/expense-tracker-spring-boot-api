@@ -1,8 +1,8 @@
 package co.istad.group2.expense_tracker_api.controller;
 
-import co.istad.group2.expense_tracker_api.dto.request.UpdateUserRoleRequest;
-import co.istad.group2.expense_tracker_api.dto.request.UpdateUserStatusRequest;
-import co.istad.group2.expense_tracker_api.dto.response.AdminUserResponse;
+import co.istad.group2.expense_tracker_api.dto.request.updateReq.UpdateUserRoleRequest;
+import co.istad.group2.expense_tracker_api.dto.request.updateReq.UpdateUserStatusRequest;
+import co.istad.group2.expense_tracker_api.dto.response.adminResponse.AdminUserResponse;
 import co.istad.group2.expense_tracker_api.service.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;

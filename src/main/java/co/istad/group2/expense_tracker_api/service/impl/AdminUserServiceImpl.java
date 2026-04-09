@@ -1,9 +1,9 @@
 package co.istad.group2.expense_tracker_api.service.impl;
 
 import co.istad.group2.expense_tracker_api.domain.User;
-import co.istad.group2.expense_tracker_api.dto.request.UpdateUserRoleRequest;
-import co.istad.group2.expense_tracker_api.dto.request.UpdateUserStatusRequest;
-import co.istad.group2.expense_tracker_api.dto.response.AdminUserResponse;
+import co.istad.group2.expense_tracker_api.dto.request.updateReq.UpdateUserRoleRequest;
+import co.istad.group2.expense_tracker_api.dto.request.updateReq.UpdateUserStatusRequest;
+import co.istad.group2.expense_tracker_api.dto.response.adminResponse.AdminUserResponse;
 import co.istad.group2.expense_tracker_api.exception.BadRequestException;
 import co.istad.group2.expense_tracker_api.exception.NotFoundException;
 import co.istad.group2.expense_tracker_api.repository.UserRepository;
