@@ -1,6 +1,6 @@
 package co.istad.group2.expense_tracker_api.controller;
 
-import co.istad.group2.expense_tracker_api.dto.response.DashboardResponse;
+import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.DashboardResponse;
 import co.istad.group2.expense_tracker_api.service.DashboardService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;

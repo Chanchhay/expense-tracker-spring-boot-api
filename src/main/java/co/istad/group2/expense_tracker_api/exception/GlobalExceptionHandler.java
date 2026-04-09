@@ -1,6 +1,6 @@
 package co.istad.group2.expense_tracker_api.exception;
 
-import co.istad.group2.expense_tracker_api.dto.response.ApiErrorResponse;
+import co.istad.group2.expense_tracker_api.dto.response.adminResponse.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

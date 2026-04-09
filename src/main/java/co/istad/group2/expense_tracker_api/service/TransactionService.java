@@ -1,9 +1,9 @@
 package co.istad.group2.expense_tracker_api.service;
 
 import co.istad.group2.expense_tracker_api.domain.enums.TransactionType;
-import co.istad.group2.expense_tracker_api.dto.request.CreateTransactionRequest;
-import co.istad.group2.expense_tracker_api.dto.request.UpdateTransactionRequest;
-import co.istad.group2.expense_tracker_api.dto.response.TransactionResponse;
+import co.istad.group2.expense_tracker_api.dto.request.createReq.CreateTransactionRequest;
+import co.istad.group2.expense_tracker_api.dto.request.updateReq.UpdateTransactionRequest;
+import co.istad.group2.expense_tracker_api.dto.response.transactionResponse.TransactionResponse;
 
 import java.util.List;
 

@@ -1,10 +1,12 @@
 package co.istad.group2.expense_tracker_api.service.impl;
 
 import co.istad.group2.expense_tracker_api.domain.Transaction;
+import co.istad.group2.expense_tracker_api.domain.TransactionImage;
 import co.istad.group2.expense_tracker_api.domain.User;
 import co.istad.group2.expense_tracker_api.domain.enums.TransactionType;
-import co.istad.group2.expense_tracker_api.dto.response.DashboardResponse;
-import co.istad.group2.expense_tracker_api.dto.response.TransactionResponse;
+import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.DashboardResponse;
+import co.istad.group2.expense_tracker_api.dto.response.transactionResponse.TransactionImageResponse;
+import co.istad.group2.expense_tracker_api.dto.response.transactionResponse.TransactionResponse;
 import co.istad.group2.expense_tracker_api.repository.TransactionRepository;
 import co.istad.group2.expense_tracker_api.repository.UserRepository;
 import co.istad.group2.expense_tracker_api.service.DashboardService;
@@ -53,11 +55,29 @@ public class DashboardServiceImpl implements DashboardService {
                 .id(transaction.getId())
                 .amount(transaction.getAmount())
                 .type(transaction.getType())
+                .accountId(transaction.getAccount().getId())
+                .accountName(transaction.getAccount().getName())
                 .categoryId(transaction.getCategory().getId())
                 .categoryName(transaction.getCategory().getName())
                 .currency(transaction.getCurrency())
                 .date(transaction.getDate())
                 .note(transaction.getNote())
+                .images(mapTransactionImages(transaction.getImages()))
                 .build();
+    }
+
+
+    private List<TransactionImageResponse> mapTransactionImages(List<TransactionImage> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
+
+        return images.stream()
+                .map(image -> TransactionImageResponse.builder()
+                        .id(image.getId())
+                        .imageUrl(image.getImageUrl())
+                        .imagePublicId(image.getImagePublicId())
+                        .build())
+                .toList();
     }
 }

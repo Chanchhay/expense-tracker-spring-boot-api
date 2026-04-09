@@ -1,8 +1,8 @@
 package co.istad.group2.expense_tracker_api.controller;
 
-import co.istad.group2.expense_tracker_api.dto.request.LoginRequest;
-import co.istad.group2.expense_tracker_api.dto.request.RegisterRequest;
-import co.istad.group2.expense_tracker_api.dto.response.AuthResponse;
+import co.istad.group2.expense_tracker_api.dto.request.createReq.LoginRequest;
+import co.istad.group2.expense_tracker_api.dto.request.createReq.RegisterRequest;
+import co.istad.group2.expense_tracker_api.dto.response.adminResponse.AuthResponse;
 import co.istad.group2.expense_tracker_api.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
