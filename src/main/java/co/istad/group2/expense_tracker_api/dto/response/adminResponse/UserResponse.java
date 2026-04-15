@@ -11,6 +11,7 @@ public record UserResponse(
         String email,
         String role,
         Boolean isActive,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String profile
 ) {
 }

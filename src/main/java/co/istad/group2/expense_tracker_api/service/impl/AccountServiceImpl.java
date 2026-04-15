@@ -89,6 +89,7 @@ public class AccountServiceImpl implements AccountService {
         account.setName(request.name().trim().replaceAll("\\s+", " "));
         account.setType(request.type());
         account.setCurrency(request.currency().trim().replaceAll("\\s+", " ").toUpperCase());
+        account.setCurrentBalance(request.initialBalance());
 
         Account updatedAccount = accountRepository.save(account);
         return mapToResponse(updatedAccount);

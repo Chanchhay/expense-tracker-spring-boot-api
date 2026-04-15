@@ -18,6 +18,7 @@ public record SavingsGoalResponse(
         BigDecimal percentageSaved,
         LocalDate deadline,
         GoalStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String image
 ) {
 }

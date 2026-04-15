@@ -1,12 +1,13 @@
 package co.istad.group2.expense_tracker_api.controller;
 
+import co.istad.group2.expense_tracker_api.dto.request.updateReq.UpdateProfileRequest;
+import co.istad.group2.expense_tracker_api.dto.response.adminResponse.UpdateUserProfileResponse;
 import co.istad.group2.expense_tracker_api.dto.response.adminResponse.UserResponse;
 import co.istad.group2.expense_tracker_api.service.UserService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -23,5 +24,14 @@ public class UserController {
         String email = authentication.getName();
         log.info("Get current user for email={}", email);
         return userService.getCurrentUser(email);
+    }
+
+    @PatchMapping
+    public UpdateUserProfileResponse updateMyProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequest request
+    ) {
+        String email = authentication.getName();
+        return userService.updateMyProfile(email, request);
     }
 }

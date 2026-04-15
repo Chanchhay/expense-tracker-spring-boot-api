@@ -32,6 +32,8 @@ public class SavingsGoal {
 
     private LocalDate deadline;
 
+    private String image;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private GoalStatus status;
