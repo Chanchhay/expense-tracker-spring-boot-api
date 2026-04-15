@@ -38,6 +38,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column
+    private String profile;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

@@ -15,6 +15,7 @@ public record CreateSavingsGoalRequest(
         @DecimalMin(value = "0.01")
         BigDecimal targetAmount,
 
-        LocalDate deadline
+        LocalDate deadline,
+        String image
 ) {
 }

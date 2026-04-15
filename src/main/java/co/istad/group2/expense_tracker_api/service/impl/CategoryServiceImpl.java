@@ -61,42 +61,11 @@ public class CategoryServiceImpl implements CategoryService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
-//        return categoryRepository.findAllByUserOrderByCreatedAtDesc(user)
-//                .stream()
-//                .map(this::mapToResponse)
-//                .toList();
         return categoryRepository.findAvailableCategoriesForUser(user.getId())
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
-
-//    @Override
-//    public void deleteCategory(Integer id, String email) {
-//        User currentUser = userRepository.findByEmail(email)
-//                .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
-//
-//        Category category = categoryRepository.findByIdAndUserId(id, currentUser.getId())
-//                .orElseThrow(() -> new NotFoundException("Category not found"));
-//
-//        boolean usedInTransactions = transactionRepository.existsByCategoryIdAndUserId(id, currentUser.getId());
-//        if (usedInTransactions) {
-//            throw new BadRequestException("Cannot delete category because it is used by transactions");
-//        }
-//
-//        boolean usedInBudgets = budgetRepository.existsByCategoryIdAndUserId(id, currentUser.getId());
-//        if (usedInBudgets) {
-//            throw new BadRequestException("Cannot delete category because it is used by budgets");
-//        }
-//
-//        boolean usedInRecurringTransactions =
-//                transactionRepository.existsByCategoryIdAndUserId(id, currentUser.getId());
-//        if (usedInRecurringTransactions) {
-//            throw new BadRequestException("Cannot delete category because it is used by recurring transactions");
-//        }
-//
-//        categoryRepository.delete(category);
-//    }
 
     @Override
     public CategoryResponse updateCategory(Integer id, UpdateCategoryRequest request, String email) {

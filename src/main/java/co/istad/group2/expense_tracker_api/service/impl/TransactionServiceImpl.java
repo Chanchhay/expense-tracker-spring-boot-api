@@ -64,6 +64,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setUser(user);
         transaction.setAccount(account);
         transaction.setCategory(category);
+        transaction.setSource(request.source().trim().replaceAll("\\s+", " "));
         if (request.images() != null) {
             request.images().forEach(imageRequest -> {
                 TransactionImage image = new TransactionImage();
@@ -146,6 +147,8 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setNote(request.note() == null ? null : request.note().trim().replaceAll("\\s+", " "));
         transaction.setCategory(category);
         transaction.setAccount(newAccount);
+        String payee = request.source().trim().replaceAll("\\s+", " ");
+        transaction.setSource(payee);
         if (request.images() != null) {
             request.images().forEach(imageRequest -> {
                 TransactionImage image = new TransactionImage();
@@ -211,6 +214,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .currency(transaction.getCurrency())
                 .date(transaction.getDate())
                 .note(transaction.getNote())
+                .source(transaction.getSource())
                 .images(mapTransactionImages(transaction.getImages()))
                 .build();
     }

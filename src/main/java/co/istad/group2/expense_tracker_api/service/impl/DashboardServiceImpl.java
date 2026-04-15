@@ -62,6 +62,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .currency(transaction.getCurrency())
                 .date(transaction.getDate())
                 .note(transaction.getNote())
+                .source(transaction.getSource())
                 .images(mapTransactionImages(transaction.getImages()))
                 .build();
     }

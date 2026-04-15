@@ -65,6 +65,9 @@ public class Transaction {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(length = 50, nullable = false)
+    private String source;
+
     @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionImage> images = new ArrayList<>();
 
@@ -79,11 +82,12 @@ public class Transaction {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
     public void addImage(TransactionImage image) {
-    if (this.images == null) {
-        this.images = new ArrayList<>();
+        if (this.images == null) {
+            this.images = new ArrayList<>();
+        }
+        this.images.add(image);
+        image.setTransaction(this);
     }
-    this.images.add(image);
-    image.setTransaction(this);
-}
 }

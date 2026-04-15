@@ -28,6 +28,9 @@ public record CreateTransactionRequest(
         @NotNull
         LocalDate date,
 
+        @NotBlank
+        String source,
+
         String note,
         List<TransactionImageRequest> images
 ) {

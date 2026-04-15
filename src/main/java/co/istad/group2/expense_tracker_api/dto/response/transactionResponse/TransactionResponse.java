@@ -18,6 +18,7 @@ public record TransactionResponse(
         String categoryName,
         String currency,
         LocalDate date,
+        String source,
         String note,
         List<TransactionImageResponse> images
 ) {

@@ -45,6 +45,7 @@ public class SavingsGoalServiceImpl implements SavingsGoalService {
         goal.setDeadline(request.deadline());
         goal.setStatus(GoalStatus.ACTIVE);
         goal.setUser(user);
+        goal.setImage(request.image());
 
         SavingsGoal savedGoal = savingsGoalRepository.save(goal);
         return mapToResponse(savedGoal);
@@ -82,6 +83,7 @@ public class SavingsGoalServiceImpl implements SavingsGoalService {
         goal.setName(request.name().trim());
         goal.setTargetAmount(request.targetAmount());
         goal.setDeadline(request.deadline());
+        goal.setImage(request.image());
 
         autoAdjustGoalStatus(goal);
 
@@ -180,6 +182,7 @@ public class SavingsGoalServiceImpl implements SavingsGoalService {
                 .deadline(goal.getDeadline())
                 .status(goal.getStatus())
                 .createdAt(goal.getCreatedAt())
+                .image(goal.getImage())
                 .build();
     }
 }
