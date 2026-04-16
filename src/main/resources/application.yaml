@@ -14,6 +14,35 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 721583193942-kpjdpadp4qn3f6mta748u5vsk44irnsi.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - openid
+              - email
+              - profile
+          facebook:
+            client-id: 2002399367020097
+            client-secret: fbf1883e8d8a0dc47d21e5dd11b915d4
+            scope:
+              - email
+              - public_profile
+            client-name: Facebook
+
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+          facebook:
+            authorization-uri: https://www.facebook.com/v23.0/dialog/oauth
+            token-uri: https://graph.facebook.com/v23.0/oauth/access_token
+            user-info-uri: https://graph.facebook.com/me?fields=id,name,email,picture.type(large)
+            user-name-attribute: id
 #  security:
 #    user:
 #      name: chanchhay
