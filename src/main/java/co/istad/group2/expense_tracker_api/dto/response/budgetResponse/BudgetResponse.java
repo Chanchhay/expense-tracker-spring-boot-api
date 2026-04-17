@@ -11,6 +11,7 @@ public record BudgetResponse(
         Integer categoryId,
         String categoryName,
         BigDecimal amount,
+        String currency,
         Integer month,
         Integer year,
         LocalDateTime createdAt

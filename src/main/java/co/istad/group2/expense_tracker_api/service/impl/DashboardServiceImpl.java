@@ -4,6 +4,7 @@ import co.istad.group2.expense_tracker_api.domain.Transaction;
 import co.istad.group2.expense_tracker_api.domain.TransactionImage;
 import co.istad.group2.expense_tracker_api.domain.User;
 import co.istad.group2.expense_tracker_api.domain.enums.TransactionType;
+import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.DashboardCurrencyTotalResponse;
 import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.DashboardResponse;
 import co.istad.group2.expense_tracker_api.dto.response.transactionResponse.TransactionImageResponse;
 import co.istad.group2.expense_tracker_api.dto.response.transactionResponse.TransactionResponse;
@@ -13,7 +14,9 @@ import co.istad.group2.expense_tracker_api.service.DashboardService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {
@@ -32,9 +35,40 @@ public class DashboardServiceImpl implements DashboardService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-        BigDecimal totalIncome = transactionRepository.sumAmountByUserAndType(user, TransactionType.INCOME);
-        BigDecimal totalExpense = transactionRepository.sumAmountByUserAndType(user, TransactionType.EXPENSE);
-        BigDecimal currentBalance = totalIncome.subtract(totalExpense);
+        List<Transaction> allTransactions = transactionRepository.findByUserOrderByDateDescCreatedAtDesc(user);
+
+        Map<String, BigDecimal> incomeByCurrency = new LinkedHashMap<>();
+        Map<String, BigDecimal> expenseByCurrency = new LinkedHashMap<>();
+
+        for (Transaction transaction : allTransactions) {
+            String currency = transaction.getCurrency();
+
+            if (transaction.getType() == TransactionType.INCOME) {
+                incomeByCurrency.merge(currency, transaction.getAmount(), BigDecimal::add);
+            } else {
+                expenseByCurrency.merge(currency, transaction.getAmount(), BigDecimal::add);
+            }
+        }
+
+        Map<String, Boolean> currencies = new LinkedHashMap<>();
+        incomeByCurrency.keySet().forEach(currency -> currencies.put(currency, true));
+        expenseByCurrency.keySet().forEach(currency -> currencies.put(currency, true));
+
+        List<DashboardCurrencyTotalResponse> totalsByCurrency = currencies.keySet()
+                .stream()
+                .map(currency -> {
+                    BigDecimal totalIncome = incomeByCurrency.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal totalExpense = expenseByCurrency.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal currentBalance = totalIncome.subtract(totalExpense);
+
+                    return DashboardCurrencyTotalResponse.builder()
+                            .currency(currency)
+                            .totalIncome(totalIncome)
+                            .totalExpense(totalExpense)
+                            .currentBalance(currentBalance)
+                            .build();
+                })
+                .toList();
 
         List<TransactionResponse> recentTransactions = transactionRepository
                 .findTop5ByUserOrderByDateDescCreatedAtDesc(user)
@@ -43,9 +77,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .toList();
 
         return DashboardResponse.builder()
-                .totalIncome(totalIncome)
-                .totalExpense(totalExpense)
-                .currentBalance(currentBalance)
+                .totalsByCurrency(totalsByCurrency)
                 .recentTransactions(recentTransactions)
                 .build();
     }

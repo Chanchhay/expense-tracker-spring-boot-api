@@ -49,4 +49,11 @@ spring:
 #      password: 123456789
 jwt:
   secret: 8rN5k0g5V3j7W1m9Q2y6X4b8C1z0A7d3K9p2L6s4F8h1J5m7N3q6T0v2Y8x4C9e
-  expiration: 86400000
+  access-expiration: 900000 #15mn
+  refresh-expiration: 604800000 #7d
+#  expiration: 86400000
+#  access-expiration: 30000 #30sec test
+#  refresh-expiration: 120000 #2mn test
+
+app:
+  frontend-url: http://localhost:3000
