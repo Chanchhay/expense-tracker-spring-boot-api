@@ -2,8 +2,12 @@ package co.istad.group2.expense_tracker_api.controller;
 
 import co.istad.group2.expense_tracker_api.dto.request.createReq.LoginRequest;
 import co.istad.group2.expense_tracker_api.dto.request.createReq.RegisterRequest;
+import co.istad.group2.expense_tracker_api.dto.response.AuthTokensResponse;
 import co.istad.group2.expense_tracker_api.dto.response.adminResponse.AuthResponse;
+import co.istad.group2.expense_tracker_api.service.AuthCookieService;
 import co.istad.group2.expense_tracker_api.service.AuthService;
+import co.istad.group2.expense_tracker_api.service.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,57 +20,81 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final AuthCookieService authCookieService;
+    private final JwtService jwtService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService,
+                          AuthCookieService authCookieService,
+                          JwtService jwtService) {
         this.authService = authService;
+        this.authCookieService = authCookieService;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        String token = authService.register(request);
+        AuthTokensResponse tokens = authService.register(request);
 
-        ResponseCookie cookie = ResponseCookie.from("access_token", token)
-                .httpOnly(true)
-                .secure(false) // true in production with HTTPS
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(60 * 60 * 24)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new AuthResponse("Registered successfully"));
+        return buildAuthResponse(
+                tokens,
+                HttpStatus.CREATED,
+                "Registered successfully"
+        );
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        String token = authService.login(request);
+        AuthTokensResponse tokens = authService.login(request);
 
-        ResponseCookie cookie = ResponseCookie.from("access_token", token)
-                .httpOnly(true)
-                .secure(false) // true in production with HTTPS
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(60 * 60 * 24)
-                .build();
+        return buildAuthResponse(
+                tokens,
+                HttpStatus.OK,
+                "Login successful"
+        );
+    }
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new AuthResponse("Login successful"));
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(HttpServletRequest request) {
+        AuthTokensResponse tokens = authService.refresh(request);
+
+        return buildAuthResponse(
+                tokens,
+                HttpStatus.OK,
+                "Token refreshed successfully"
+        );
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<AuthResponse> logout() {
-        ResponseCookie cookie = ResponseCookie.from("access_token", "")
-                .httpOnly(true)
-                .secure(false) // true in production with HTTPS
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(0)
-                .build();
+    public ResponseEntity<AuthResponse> logout(HttpServletRequest request) {
+        authService.logout(request);
+
+        ResponseCookie accessCookie = authCookieService.clearAccessTokenCookie();
+        ResponseCookie refreshCookie = authCookieService.clearRefreshTokenCookie();
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(new AuthResponse("Logout successful"));
+    }
+
+    private ResponseEntity<AuthResponse> buildAuthResponse(
+            AuthTokensResponse tokens,
+            HttpStatus status,
+            String message
+    ) {
+        ResponseCookie accessCookie = authCookieService.createAccessTokenCookie(
+                tokens.accessToken(),
+                jwtService.getAccessExpirationSeconds()
+        );
+
+        ResponseCookie refreshCookie = authCookieService.createRefreshTokenCookie(
+                tokens.refreshToken(),
+                jwtService.getRefreshExpirationSeconds()
+        );
+
+        return ResponseEntity.status(status)
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(new AuthResponse(message));
     }
 }

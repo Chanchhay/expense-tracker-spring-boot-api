@@ -6,11 +6,14 @@ import co.istad.group2.expense_tracker_api.domain.enums.AuthProvider;
 import co.istad.group2.expense_tracker_api.domain.enums.Role;
 import co.istad.group2.expense_tracker_api.repository.UserAuthProviderRepository;
 import co.istad.group2.expense_tracker_api.repository.UserRepository;
+import co.istad.group2.expense_tracker_api.service.AuthCookieService;
 import co.istad.group2.expense_tracker_api.service.JwtService;
+import co.istad.group2.expense_tracker_api.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,6 +32,11 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final AuthCookieService authCookieService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Override
     public void onAuthenticationSuccess(@NonNull HttpServletRequest request,
@@ -38,8 +46,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
         assert token.getPrincipal() != null;
-        Map<String, Object> attributes = token.getPrincipal().getAttributes();
 
+        Map<String, Object> attributes = token.getPrincipal().getAttributes();
         String registrationId = token.getAuthorizedClientRegistrationId();
 
         String email = (String) attributes.get("email");
@@ -76,25 +84,34 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
+        email = email.trim().toLowerCase();
+        if (name == null || name.isBlank()) {
+            name = email;
+        } else {
+            name = name.trim().replaceAll("\\s+", " ");
+        }
+
+        String finalEmail = email;
+        String finalName = name;
         User user = userAuthProviderRepository
                 .findByProviderAndProviderUserId(provider, providerUserId)
                 .map(UserAuthProvider::getUser)
                 .orElseGet(() -> {
-                    User existingUser = userRepository.findByEmail(email).orElse(null);
+                    User existingUser = userRepository.findByEmail(finalEmail).orElse(null);
 
                     if (existingUser != null) {
-                        linkProvider(existingUser, provider, providerUserId, email);
+                        linkProvider(existingUser, provider, providerUserId, finalEmail);
                         return existingUser;
                     }
 
                     User newUser = new User();
-                    newUser.setEmail(email);
-                    newUser.setName(name);
+                    newUser.setEmail(finalEmail);
+                    newUser.setName(finalName);
                     newUser.setRole(Role.USER);
                     newUser.setIsActive(true);
 
                     User savedUser = userRepository.save(newUser);
-                    linkProvider(savedUser, provider, providerUserId, email);
+                    linkProvider(savedUser, provider, providerUserId, finalEmail);
                     return savedUser;
                 });
 
@@ -114,16 +131,28 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 Set.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );
 
-        String jwt = jwtService.generateToken(userDetails, user.getRole().name(), user.getId());
+        String accessToken = jwtService.generateAccessToken(userDetails, user.getRole().name(), user.getId());
+        String refreshToken = jwtService.generateRefreshToken(userDetails, user.getId());
 
-        String cookie = "access_token=" + jwt +
-                "; Path=/" +
-                "; HttpOnly" +
-                "; SameSite=Lax" +
-                "; Max-Age=" + (60 * 60 * 24);
+        refreshTokenService.save(user, refreshToken, jwtService.getRefreshExpirationSeconds());
 
-        response.addHeader("Set-Cookie", cookie);
-        response.sendRedirect("http://localhost:3000/dashboard");
+        response.addHeader(
+                "Set-Cookie",
+                authCookieService.createAccessTokenCookie(
+                        accessToken,
+                        jwtService.getAccessExpirationSeconds()
+                ).toString()
+        );
+
+        response.addHeader(
+                "Set-Cookie",
+                authCookieService.createRefreshTokenCookie(
+                        refreshToken,
+                        jwtService.getRefreshExpirationSeconds()
+                ).toString()
+        );
+
+        response.sendRedirect(frontendUrl + "/dashboard");
     }
 
     private void linkProvider(User user,

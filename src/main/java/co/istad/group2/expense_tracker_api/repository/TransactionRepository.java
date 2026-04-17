@@ -68,4 +68,22 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
             LocalDate startDate,
             LocalDate endDate
     );
+
+    @Query("""
+        SELECT COALESCE(SUM(t.amount), 0)
+        FROM Transaction t
+        WHERE t.user = :user
+          AND t.category = :category
+          AND t.currency = :currency
+          AND t.type = co.istad.group2.expense_tracker_api.domain.enums.TransactionType.EXPENSE
+          AND t.date >= :startDate
+          AND t.date < :endDate
+        """)
+BigDecimal sumExpenseByUserAndCategoryAndCurrencyAndDateRange(
+        User user,
+        co.istad.group2.expense_tracker_api.domain.Category category,
+        String currency,
+        LocalDate startDate,
+        LocalDate endDate
+);
 }

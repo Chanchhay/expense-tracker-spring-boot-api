@@ -5,6 +5,7 @@ import co.istad.group2.expense_tracker_api.domain.Category;
 import co.istad.group2.expense_tracker_api.domain.User;
 import co.istad.group2.expense_tracker_api.dto.request.createReq.CreateBudgetRequest;
 import co.istad.group2.expense_tracker_api.dto.request.updateReq.UpdateBudgetRequest;
+import co.istad.group2.expense_tracker_api.dto.response.budgetResponse.BudgetCurrencyTotalResponse;
 import co.istad.group2.expense_tracker_api.dto.response.budgetResponse.BudgetResponse;
 import co.istad.group2.expense_tracker_api.dto.response.budgetResponse.BudgetSummaryItemResponse;
 import co.istad.group2.expense_tracker_api.dto.response.budgetResponse.BudgetSummaryResponse;
@@ -21,7 +22,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class BudgetServiceImpl implements BudgetService {
@@ -46,24 +49,29 @@ public class BudgetServiceImpl implements BudgetService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
-        Category category = categoryRepository.findByIdAndUserOrUserIdIsNullAndId(request.categoryId(), user, request.categoryId())
+        Category category = categoryRepository
+                .findByIdAndUserOrUserIdIsNullAndId(request.categoryId(), user, request.categoryId())
                 .orElseThrow(() -> new NotFoundException("Category not found or does not belong to user"));
 
-        boolean exists = budgetRepository.existsByUserAndCategoryAndMonthAndYear(
+        String currency = request.currency().trim().toUpperCase();
+
+        boolean exists = budgetRepository.existsByUserAndCategoryAndMonthAndYearAndCurrency(
                 user,
                 category,
                 request.month(),
-                request.year()
+                request.year(),
+                currency
         );
 
         if (exists) {
-            throw new ConflictException("Budget already exists for this category and month");
+            throw new ConflictException("Budget already exists for this category, month, and currency");
         }
 
         Budget budget = new Budget();
         budget.setUser(user);
         budget.setCategory(category);
         budget.setAmount(request.amount());
+        budget.setCurrency(currency);
         budget.setMonth(request.month());
         budget.setYear(request.year());
 
@@ -101,29 +109,35 @@ public class BudgetServiceImpl implements BudgetService {
         Budget budget = budgetRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new NotFoundException("Budget not found or does not belong to user"));
 
-        Category category = categoryRepository.findByIdAndUserOrUserIdIsNullAndId(request.categoryId(), user, request.categoryId())
+        Category category = categoryRepository
+                .findByIdAndUserOrUserIdIsNullAndId(request.categoryId(), user, request.categoryId())
                 .orElseThrow(() -> new NotFoundException("Category not found or does not belong to user"));
+
+        String currency = request.currency().trim().toUpperCase();
 
         boolean changedIdentity =
                 !budget.getCategory().getId().equals(category.getId()) ||
-                !budget.getMonth().equals(request.month()) ||
-                !budget.getYear().equals(request.year());
+                        !budget.getMonth().equals(request.month()) ||
+                        !budget.getYear().equals(request.year()) ||
+                        !budget.getCurrency().equals(currency);
 
         if (changedIdentity) {
-            boolean exists = budgetRepository.existsByUserAndCategoryAndMonthAndYear(
+            boolean exists = budgetRepository.existsByUserAndCategoryAndMonthAndYearAndCurrency(
                     user,
                     category,
                     request.month(),
-                    request.year()
+                    request.year(),
+                    currency
             );
 
             if (exists) {
-                throw new ConflictException("Budget already exists for this category and month");
+                throw new ConflictException("Budget already exists for this category, month, and currency");
             }
         }
 
         budget.setCategory(category);
         budget.setAmount(request.amount());
+        budget.setCurrency(currency);
         budget.setMonth(request.month());
         budget.setYear(request.year());
 
@@ -147,7 +161,7 @@ public class BudgetServiceImpl implements BudgetService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
-        YearMonth yearMonth = YearMonth.parse(month); // format: 2026-04
+        YearMonth yearMonth = YearMonth.parse(month);
         int targetMonth = yearMonth.getMonthValue();
         int targetYear = yearMonth.getYear();
 
@@ -162,9 +176,10 @@ public class BudgetServiceImpl implements BudgetService {
 
         List<BudgetSummaryItemResponse> items = budgets.stream()
                 .map(budget -> {
-                    BigDecimal spentAmount = transactionRepository.sumExpenseByUserAndCategoryAndDateRange(
+                    BigDecimal spentAmount = transactionRepository.sumExpenseByUserAndCategoryAndCurrencyAndDateRange(
                             user,
                             budget.getCategory(),
+                            budget.getCurrency(),
                             startDate,
                             endDate
                     );
@@ -183,6 +198,7 @@ public class BudgetServiceImpl implements BudgetService {
                             .categoryId(budget.getCategory().getId())
                             .categoryName(budget.getCategory().getName())
                             .budgetAmount(budget.getAmount())
+                            .currency(budget.getCurrency())
                             .spentAmount(spentAmount)
                             .remainingAmount(remainingAmount)
                             .percentageUsed(percentageUsed)
@@ -190,21 +206,37 @@ public class BudgetServiceImpl implements BudgetService {
                 })
                 .toList();
 
-        BigDecimal totalBudget = items.stream()
-                .map(BudgetSummaryItemResponse::budgetAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<String, BigDecimal> totalBudgetMap = new LinkedHashMap<>();
+        Map<String, BigDecimal> totalSpentMap = new LinkedHashMap<>();
 
-        BigDecimal totalSpent = items.stream()
-                .map(BudgetSummaryItemResponse::spentAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        for (BudgetSummaryItemResponse item : items) {
+            totalBudgetMap.merge(item.currency(), item.budgetAmount(), BigDecimal::add);
+            totalSpentMap.merge(item.currency(), item.spentAmount(), BigDecimal::add);
+        }
 
-        BigDecimal totalRemaining = totalBudget.subtract(totalSpent);
+        Map<String, Boolean> currencies = new LinkedHashMap<>();
+        totalBudgetMap.keySet().forEach(currency -> currencies.put(currency, true));
+        totalSpentMap.keySet().forEach(currency -> currencies.put(currency, true));
+
+        List<BudgetCurrencyTotalResponse> totalsByCurrency = currencies.keySet()
+                .stream()
+                .map(currency -> {
+                    BigDecimal totalBudget = totalBudgetMap.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal totalSpent = totalSpentMap.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal totalRemaining = totalBudget.subtract(totalSpent);
+
+                    return BudgetCurrencyTotalResponse.builder()
+                            .currency(currency)
+                            .totalBudget(totalBudget)
+                            .totalSpent(totalSpent)
+                            .totalRemaining(totalRemaining)
+                            .build();
+                })
+                .toList();
 
         return BudgetSummaryResponse.builder()
                 .month(month)
-                .totalBudget(totalBudget)
-                .totalSpent(totalSpent)
-                .totalRemaining(totalRemaining)
+                .totalsByCurrency(totalsByCurrency)
                 .items(items)
                 .build();
     }
@@ -215,6 +247,7 @@ public class BudgetServiceImpl implements BudgetService {
                 .categoryId(budget.getCategory().getId())
                 .categoryName(budget.getCategory().getName())
                 .amount(budget.getAmount())
+                .currency(budget.getCurrency())
                 .month(budget.getMonth())
                 .year(budget.getYear())
                 .createdAt(budget.getCreatedAt())

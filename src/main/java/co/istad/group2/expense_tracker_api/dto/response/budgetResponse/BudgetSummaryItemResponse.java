@@ -10,6 +10,7 @@ public record BudgetSummaryItemResponse(
         Integer categoryId,
         String categoryName,
         BigDecimal budgetAmount,
+        String currency,
         BigDecimal spentAmount,
         BigDecimal remainingAmount,
         BigDecimal percentageUsed

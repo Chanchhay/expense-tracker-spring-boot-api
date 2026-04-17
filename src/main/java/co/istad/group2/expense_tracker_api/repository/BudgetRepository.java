@@ -10,7 +10,13 @@ import java.util.Optional;
 
 public interface BudgetRepository extends JpaRepository<Budget, String> {
 
-    boolean existsByUserAndCategoryAndMonthAndYear(User user, Category category, Integer month, Integer year);
+    boolean existsByUserAndCategoryAndMonthAndYearAndCurrency(
+        User user,
+        Category category,
+        Integer month,
+        Integer year,
+        String currency
+);
 
     List<Budget> findAllByUserOrderByYearDescMonthDescCreatedAtDesc(User user);
 

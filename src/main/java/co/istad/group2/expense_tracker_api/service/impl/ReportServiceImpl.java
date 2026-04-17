@@ -5,6 +5,8 @@ import co.istad.group2.expense_tracker_api.domain.User;
 import co.istad.group2.expense_tracker_api.domain.enums.TransactionType;
 import co.istad.group2.expense_tracker_api.dto.response.accountResponse.AccountSummaryItemResponse;
 import co.istad.group2.expense_tracker_api.dto.response.accountResponse.AccountSummaryResponse;
+import co.istad.group2.expense_tracker_api.dto.response.accountResponse.CashFlowCurrencyGroupResponse;
+import co.istad.group2.expense_tracker_api.dto.response.accountResponse.CurrencyBalanceTotalResponse;
 import co.istad.group2.expense_tracker_api.dto.response.categoryResponse.CategoryBreakdownItemResponse;
 import co.istad.group2.expense_tracker_api.dto.response.categoryResponse.CategoryBreakdownResponse;
 import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.MonthlySummaryResponse;
@@ -25,10 +27,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ReportServiceImpl implements ReportService {
@@ -143,12 +142,26 @@ public class ReportServiceImpl implements ReportService {
                         .build())
                 .toList();
 
-        BigDecimal totalCurrentBalance = items.stream()
-                .map(AccountSummaryItemResponse::currentBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<String, BigDecimal> totalsMap = new LinkedHashMap<>();
+
+        for (AccountSummaryItemResponse item : items) {
+            totalsMap.merge(
+                    item.currency(),
+                    item.currentBalance(),
+                    BigDecimal::add
+            );
+        }
+
+        List<CurrencyBalanceTotalResponse> totalsByCurrency = totalsMap.entrySet()
+                .stream()
+                .map(entry -> CurrencyBalanceTotalResponse.builder()
+                        .currency(entry.getKey())
+                        .totalBalance(entry.getValue())
+                        .build())
+                .toList();
 
         return AccountSummaryResponse.builder()
-                .totalCurrentBalance(totalCurrentBalance)
+                .totalsByCurrency(totalsByCurrency)
                 .items(items)
                 .build();
     }
@@ -177,51 +190,71 @@ public class ReportServiceImpl implements ReportService {
                         to.plusDays(1)
                 );
 
-        Map<String, BigDecimal> incomeMap = new LinkedHashMap<>();
-        Map<String, BigDecimal> expenseMap = new LinkedHashMap<>();
-
         DateTimeFormatter formatter = normalizedGroupBy.equals("MONTH")
                 ? DateTimeFormatter.ofPattern("yyyy-MM")
                 : DateTimeFormatter.ISO_DATE;
 
+        Map<String, Map<String, BigDecimal>> incomeByCurrency = new LinkedHashMap<>();
+        Map<String, Map<String, BigDecimal>> expenseByCurrency = new LinkedHashMap<>();
+
         for (Transaction transaction : transactions) {
+
+            String currency = transaction.getCurrency();
+
             String key = normalizedGroupBy.equals("MONTH")
                     ? YearMonth.from(transaction.getDate()).format(formatter)
                     : transaction.getDate().format(formatter);
 
+            incomeByCurrency.putIfAbsent(currency, new LinkedHashMap<>());
+            expenseByCurrency.putIfAbsent(currency, new LinkedHashMap<>());
+
             if (transaction.getType() == TransactionType.INCOME) {
-                incomeMap.merge(key, transaction.getAmount(), BigDecimal::add);
+                incomeByCurrency.get(currency).merge(key, transaction.getAmount(), BigDecimal::add);
             } else {
-                expenseMap.merge(key, transaction.getAmount(), BigDecimal::add);
+                expenseByCurrency.get(currency).merge(key, transaction.getAmount(), BigDecimal::add);
             }
         }
 
-        Map<String, Boolean> allPeriods = new LinkedHashMap<>();
-        incomeMap.keySet().forEach(period -> allPeriods.put(period, true));
-        expenseMap.keySet().forEach(period -> allPeriods.put(period, true));
+        List<CashFlowCurrencyGroupResponse> groups = new ArrayList<>();
 
-        List<CashFlowItemResponse> items = allPeriods.keySet()
-                .stream()
-                .sorted()
-                .map(period -> {
-                    BigDecimal income = incomeMap.getOrDefault(period, BigDecimal.ZERO);
-                    BigDecimal expense = expenseMap.getOrDefault(period, BigDecimal.ZERO);
-                    BigDecimal net = income.subtract(expense);
+        for (String currency : incomeByCurrency.keySet()) {
 
-                    return CashFlowItemResponse.builder()
-                            .period(period)
-                            .income(income)
-                            .expense(expense)
-                            .net(net)
-                            .build();
-                })
-                .toList();
+            Map<String, BigDecimal> incomeMap = incomeByCurrency.getOrDefault(currency, new LinkedHashMap<>());
+            Map<String, BigDecimal> expenseMap = expenseByCurrency.getOrDefault(currency, new LinkedHashMap<>());
 
+            Map<String, Boolean> allPeriods = new LinkedHashMap<>();
+            incomeMap.keySet().forEach(p -> allPeriods.put(p, true));
+            expenseMap.keySet().forEach(p -> allPeriods.put(p, true));
+
+            List<CashFlowItemResponse> items = allPeriods.keySet()
+                    .stream()
+                    .sorted()
+                    .map(period -> {
+                        BigDecimal income = incomeMap.getOrDefault(period, BigDecimal.ZERO);
+                        BigDecimal expense = expenseMap.getOrDefault(period, BigDecimal.ZERO);
+                        BigDecimal net = income.subtract(expense);
+
+                        return CashFlowItemResponse.builder()
+                                .period(period)
+                                .income(income)
+                                .expense(expense)
+                                .net(net)
+                                .build();
+                    })
+                    .toList();
+
+            groups.add(
+                    CashFlowCurrencyGroupResponse.builder()
+                            .currency(currency)
+                            .items(items)
+                            .build()
+            );
+        }
         return CashFlowResponse.builder()
                 .from(from)
                 .to(to)
                 .groupBy(normalizedGroupBy)
-                .items(items)
+                .groups(groups)
                 .build();
     }
 

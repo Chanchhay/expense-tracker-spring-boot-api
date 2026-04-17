@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "budgets",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "category_id", "month", "year"})
+                @UniqueConstraint(columnNames = {"user_id", "category_id", "month", "year", "currency"})
         }
 )
 public class Budget {
@@ -26,6 +26,9 @@ public class Budget {
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
+
+    @Column(nullable = false, length = 3)
+    private String currency;
 
     @Column(nullable = false)
     private Integer month;
