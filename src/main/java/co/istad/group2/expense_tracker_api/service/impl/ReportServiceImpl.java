@@ -7,8 +7,10 @@ import co.istad.group2.expense_tracker_api.dto.response.accountResponse.AccountS
 import co.istad.group2.expense_tracker_api.dto.response.accountResponse.AccountSummaryResponse;
 import co.istad.group2.expense_tracker_api.dto.response.accountResponse.CashFlowCurrencyGroupResponse;
 import co.istad.group2.expense_tracker_api.dto.response.accountResponse.CurrencyBalanceTotalResponse;
+import co.istad.group2.expense_tracker_api.dto.response.categoryResponse.CategoryBreakdownCurrencyGroupResponse;
 import co.istad.group2.expense_tracker_api.dto.response.categoryResponse.CategoryBreakdownItemResponse;
 import co.istad.group2.expense_tracker_api.dto.response.categoryResponse.CategoryBreakdownResponse;
+import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.MonthlySummaryCurrencyGroupResponse;
 import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.MonthlySummaryResponse;
 import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.TopExpenseItemResponse;
 import co.istad.group2.expense_tracker_api.dto.response.dashboardResponse.TopExpensesResponse;
@@ -57,15 +59,42 @@ public class ReportServiceImpl implements ReportService {
                         user, startDate, endDate
                 );
 
-        BigDecimal totalIncome = sumByType(transactions, TransactionType.INCOME);
-        BigDecimal totalExpense = sumByType(transactions, TransactionType.EXPENSE);
-        BigDecimal netBalance = totalIncome.subtract(totalExpense);
+        Map<String, BigDecimal> incomeMap = new LinkedHashMap<>();
+        Map<String, BigDecimal> expenseMap = new LinkedHashMap<>();
+
+        for (Transaction t : transactions) {
+            String currency = t.getCurrency();
+
+            if (t.getType() == TransactionType.INCOME) {
+                incomeMap.merge(currency, t.getAmount(), BigDecimal::add);
+            } else {
+                expenseMap.merge(currency, t.getAmount(), BigDecimal::add);
+            }
+        }
+
+        Map<String, Boolean> currencies = new LinkedHashMap<>();
+        incomeMap.keySet().forEach(c -> currencies.put(c, true));
+        expenseMap.keySet().forEach(c -> currencies.put(c, true));
+
+        List<MonthlySummaryCurrencyGroupResponse> groups = currencies.keySet()
+                .stream()
+                .map(currency -> {
+                    BigDecimal income = incomeMap.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal expense = expenseMap.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal net = income.subtract(expense);
+
+                    return MonthlySummaryCurrencyGroupResponse.builder()
+                            .currency(currency)
+                            .totalIncome(income)
+                            .totalExpense(expense)
+                            .netBalance(net)
+                            .build();
+                })
+                .toList();
 
         return MonthlySummaryResponse.builder()
                 .month(month)
-                .totalIncome(totalIncome)
-                .totalExpense(totalExpense)
-                .netBalance(netBalance)
+                .groups(groups)
                 .build();
     }
 
@@ -85,44 +114,68 @@ public class ReportServiceImpl implements ReportService {
                 .filter(t -> t.getType() == TransactionType.EXPENSE)
                 .toList();
 
-        BigDecimal totalExpense = transactions.stream()
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<String, List<Transaction>> transactionsByCurrency = new LinkedHashMap<>();
 
-        Map<Integer, BigDecimal> categoryAmounts = new LinkedHashMap<>();
-        Map<Integer, String> categoryNames = new LinkedHashMap<>();
-
-        for (Transaction transaction : transactions) {
-            Integer categoryId = transaction.getCategory().getId();
-            categoryNames.put(categoryId, transaction.getCategory().getName());
-            categoryAmounts.merge(categoryId, transaction.getAmount(), BigDecimal::add);
+        for (Transaction t : transactions) {
+            transactionsByCurrency
+                    .computeIfAbsent(t.getCurrency(), k -> new ArrayList<>())
+                    .add(t);
         }
 
-        List<CategoryBreakdownItemResponse> items = categoryAmounts.entrySet()
-                .stream()
-                .map(entry -> {
-                    BigDecimal percentage = BigDecimal.ZERO;
+        List<CategoryBreakdownCurrencyGroupResponse> groups = new ArrayList<>();
 
-                    if (totalExpense.compareTo(BigDecimal.ZERO) > 0) {
-                        percentage = entry.getValue()
-                                .multiply(BigDecimal.valueOf(100))
-                                .divide(totalExpense, 2, RoundingMode.HALF_UP);
-                    }
+        for (Map.Entry<String, List<Transaction>> entry : transactionsByCurrency.entrySet()) {
 
-                    return CategoryBreakdownItemResponse.builder()
-                            .categoryId(entry.getKey())
-                            .categoryName(categoryNames.get(entry.getKey()))
-                            .amount(entry.getValue())
-                            .percentage(percentage)
-                            .build();
-                })
-                .sorted(Comparator.comparing(CategoryBreakdownItemResponse::amount).reversed())
-                .toList();
+            String currency = entry.getKey();
+            List<Transaction> currencyTransactions = entry.getValue();
+
+            BigDecimal totalExpense = currencyTransactions.stream()
+                    .map(Transaction::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            Map<Integer, BigDecimal> categoryAmounts = new LinkedHashMap<>();
+            Map<Integer, String> categoryNames = new LinkedHashMap<>();
+
+            for (Transaction t : currencyTransactions) {
+                Integer categoryId = t.getCategory().getId();
+
+                categoryNames.put(categoryId, t.getCategory().getName());
+                categoryAmounts.merge(categoryId, t.getAmount(), BigDecimal::add);
+            }
+
+            List<CategoryBreakdownItemResponse> items = categoryAmounts.entrySet()
+                    .stream()
+                    .map(e -> {
+                        BigDecimal percentage = BigDecimal.ZERO;
+
+                        if (totalExpense.compareTo(BigDecimal.ZERO) > 0) {
+                            percentage = e.getValue()
+                                    .multiply(BigDecimal.valueOf(100))
+                                    .divide(totalExpense, 2, RoundingMode.HALF_UP);
+                        }
+
+                        return CategoryBreakdownItemResponse.builder()
+                                .categoryId(e.getKey())
+                                .categoryName(categoryNames.get(e.getKey()))
+                                .amount(e.getValue())
+                                .percentage(percentage)
+                                .build();
+                    })
+                    .sorted(Comparator.comparing(CategoryBreakdownItemResponse::amount).reversed())
+                    .toList();
+
+            groups.add(
+                    CategoryBreakdownCurrencyGroupResponse.builder()
+                            .currency(currency)
+                            .totalExpense(totalExpense)
+                            .items(items)
+                            .build()
+            );
+        }
 
         return CategoryBreakdownResponse.builder()
                 .month(month)
-                .totalExpense(totalExpense)
-                .items(items)
+                .groups(groups)
                 .build();
     }
 

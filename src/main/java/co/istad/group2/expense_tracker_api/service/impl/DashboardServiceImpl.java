@@ -14,6 +14,7 @@ import co.istad.group2.expense_tracker_api.service.DashboardService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +36,20 @@ public class DashboardServiceImpl implements DashboardService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-        List<Transaction> allTransactions = transactionRepository.findByUserOrderByDateDescCreatedAtDesc(user);
+        LocalDate endDate = LocalDate.now().plusDays(1);
+        LocalDate startDate = LocalDate.now().minusDays(29);
+
+        List<Transaction> last30DaysTransactions =
+                transactionRepository.findByUserAndDateGreaterThanEqualAndDateLessThanOrderByDateAscCreatedAtAsc(
+                        user,
+                        startDate,
+                        endDate
+                );
 
         Map<String, BigDecimal> incomeByCurrency = new LinkedHashMap<>();
         Map<String, BigDecimal> expenseByCurrency = new LinkedHashMap<>();
 
-        for (Transaction transaction : allTransactions) {
+        for (Transaction transaction : last30DaysTransactions) {
             String currency = transaction.getCurrency();
 
             if (transaction.getType() == TransactionType.INCOME) {
@@ -57,15 +66,15 @@ public class DashboardServiceImpl implements DashboardService {
         List<DashboardCurrencyTotalResponse> totalsByCurrency = currencies.keySet()
                 .stream()
                 .map(currency -> {
-                    BigDecimal totalIncome = incomeByCurrency.getOrDefault(currency, BigDecimal.ZERO);
-                    BigDecimal totalExpense = expenseByCurrency.getOrDefault(currency, BigDecimal.ZERO);
-                    BigDecimal currentBalance = totalIncome.subtract(totalExpense);
+                    BigDecimal incomeLast30Days = incomeByCurrency.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal expenseLast30Days = expenseByCurrency.getOrDefault(currency, BigDecimal.ZERO);
+                    BigDecimal netCashFlowLast30Days = incomeLast30Days.subtract(expenseLast30Days);
 
                     return DashboardCurrencyTotalResponse.builder()
                             .currency(currency)
-                            .totalIncome(totalIncome)
-                            .totalExpense(totalExpense)
-                            .currentBalance(currentBalance)
+                            .incomeLast30Days(incomeLast30Days)
+                            .expenseLast30Days(expenseLast30Days)
+                            .netCashFlowLast30Days(netCashFlowLast30Days)
                             .build();
                 })
                 .toList();

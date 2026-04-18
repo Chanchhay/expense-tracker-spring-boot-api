@@ -1,5 +1,7 @@
 package co.istad.group2.expense_tracker_api.config;
 
+import co.istad.group2.expense_tracker_api.exception.OAuth2FailureHandler;
+import co.istad.group2.expense_tracker_api.exception.OAuth2SuccessHandler;
 import co.istad.group2.expense_tracker_api.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,13 +35,15 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          CustomUserDetailsService userDetailsService, OAuth2SuccessHandler oAuth2SuccessHandler, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
+                          CustomUserDetailsService userDetailsService, OAuth2SuccessHandler oAuth2SuccessHandler, CustomAuthenticationEntryPoint customAuthenticationEntryPoint, OAuth2FailureHandler oAuth2FailureHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.userDetailsService = userDetailsService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
         this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
+        this.oAuth2FailureHandler = oAuth2FailureHandler;
     }
 
     @Bean
@@ -86,6 +90,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) {
             .httpBasic(AbstractHttpConfigurer::disable)
             .oauth2Login(oauth -> oauth
                     .successHandler(oAuth2SuccessHandler)
+                    .failureHandler(oAuth2FailureHandler)
             );
 
     return http.build();
