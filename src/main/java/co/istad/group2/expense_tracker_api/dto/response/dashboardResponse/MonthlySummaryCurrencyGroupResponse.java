@@ -5,10 +5,10 @@ import lombok.Builder;
 import java.math.BigDecimal;
 
 @Builder
-public record DashboardCurrencyTotalResponse(
+public record MonthlySummaryCurrencyGroupResponse(
         String currency,
-        BigDecimal incomeLast30Days,
-        BigDecimal expenseLast30Days,
-        BigDecimal netCashFlowLast30Days
+        BigDecimal totalIncome,
+        BigDecimal totalExpense,
+        BigDecimal netBalance
 ) {
 }

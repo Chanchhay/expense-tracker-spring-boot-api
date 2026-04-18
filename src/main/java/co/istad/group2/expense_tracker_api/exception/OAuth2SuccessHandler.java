@@ -1,4 +1,4 @@
-package co.istad.group2.expense_tracker_api.config;
+package co.istad.group2.expense_tracker_api.exception;
 
 import co.istad.group2.expense_tracker_api.domain.User;
 import co.istad.group2.expense_tracker_api.domain.UserAuthProvider;
@@ -121,7 +121,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         }
 
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "User is inactive");
+            response.sendRedirect(frontendUrl + "/login?error=account_disabled");
             return;
         }
 

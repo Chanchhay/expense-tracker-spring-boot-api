@@ -15,6 +15,7 @@ import co.istad.group2.expense_tracker_api.service.JwtService;
 import co.istad.group2.expense_tracker_api.service.RefreshTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -79,10 +80,6 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new NotFoundException("User not found"));
-
-        if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new BadRequestException("User is inactive");
-        }
 
         return generateAndStoreTokens(user);
     }
