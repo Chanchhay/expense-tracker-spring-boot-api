@@ -3,10 +3,9 @@ spring:
     name: Expense-tracker-web-app
   datasource:
     driver-class-name: org.postgresql.Driver
-    username: postgres
-    password:
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
     url: jdbc:postgresql://localhost:5432/expense_tracker_db
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -19,41 +18,23 @@ spring:
       client:
         registration:
           google:
-            client-id: 721583193942-kpjdpadp4qn3f6mta748u5vsk44irnsi.apps.googleusercontent.com
-            client-secret: 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
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
               - openid
               - email
               - profile
           facebook:
-            client-id: 2002399367020097
-            client-secret: fbf1883e8d8a0dc47d21e5dd11b915d4
+            client-id: ${FACEBOOK_CLIENT_ID}
+            client-secret: ${FACEBOOK_CLIENT_SECRET}
             scope:
               - email
               - public_profile
             client-name: Facebook
-
-        provider:
-          google:
-            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
-            token-uri: https://oauth2.googleapis.com/token
-            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
-          facebook:
-            authorization-uri: https://www.facebook.com/v23.0/dialog/oauth
-            token-uri: https://graph.facebook.com/v23.0/oauth/access_token
-            user-info-uri: https://graph.facebook.com/me?fields=id,name,email,picture.type(large)
-            user-name-attribute: id
-#  security:
-#    user:
-#      name: chanchhay
-#      password: 123456789
 jwt:
-  secret: 8rN5k0g5V3j7W1m9Q2y6X4b8C1z0A7d3K9p2L6s4F8h1J5m7N3q6T0v2Y8x4C9e
-  access-expiration: 900000 #15mn
-  refresh-expiration: 604800000 #7d
-#  expiration: 86400000
-#  access-expiration: 30000 #30sec test
-#  refresh-expiration: 120000 #2mn test
+  secret: ${JWT_SECRET}
+  access-expiration: 900000
+  refresh-expiration: 604800000
 
 app:
   frontend-url: http://localhost:3000

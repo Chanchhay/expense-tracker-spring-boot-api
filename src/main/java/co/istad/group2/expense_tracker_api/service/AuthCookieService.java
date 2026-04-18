@@ -20,7 +20,7 @@ public class AuthCookieService {
         return ResponseCookie.from("refresh_token", token)
                 .httpOnly(true)
                 .secure(false)
-                .path("/api/v1/auth")
+                .path("/")
                 .sameSite("Lax")
                 .maxAge(maxAgeSeconds)
                 .build();
@@ -40,7 +40,7 @@ public class AuthCookieService {
         return ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
                 .secure(false)
-                .path("/api/v1/auth")
+                .path("/")
                 .sameSite("Lax")
                 .maxAge(0)
                 .build();
