@@ -1,6 +1,7 @@
 package co.istad.group2.expense_tracker_api.exception;
 
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Value; // <-- Import this
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
@@ -14,19 +15,20 @@ import java.io.IOException;
 @Component
 public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
+    @Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
     @Override
     public void onAuthenticationFailure(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
                                         @NonNull AuthenticationException exception) throws IOException {
 
         String errorCode = "oauth2_error";
 
-        // If the account is inactive, our CustomUserDetailsService threw this!
         if (exception instanceof DisabledException || exception.getCause() instanceof DisabledException) {
             errorCode = "account_disabled";
         }
 
-        String frontendLoginUrl = "http://localhost:3000/login";
-        String targetUrl = UriComponentsBuilder.fromUriString(frontendLoginUrl)
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/login")
                 .queryParam("error", errorCode)
                 .build().toUriString();
 
