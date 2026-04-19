@@ -5,7 +5,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
-    url: jdbc:postgresql://postgres:RYBPIfcfjvcJVOIZYhGqZvPEPtLChafN@postgres.railway.internal:5432/railway
+    url: jdbc:postgresql://postgres.railway.internal:5432/railway
   jpa:
     hibernate:
       ddl-auto: update
