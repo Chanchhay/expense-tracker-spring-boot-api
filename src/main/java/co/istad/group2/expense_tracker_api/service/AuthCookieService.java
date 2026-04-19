@@ -11,7 +11,7 @@ public class AuthCookieService {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite("None")
                 .maxAge(maxAgeSeconds)
                 .build();
     }
@@ -21,7 +21,7 @@ public class AuthCookieService {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite("None")
                 .maxAge(maxAgeSeconds)
                 .build();
     }
@@ -31,7 +31,7 @@ public class AuthCookieService {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite("None")
                 .maxAge(0)
                 .build();
     }
@@ -41,7 +41,7 @@ public class AuthCookieService {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite("None")
                 .maxAge(0)
                 .build();
     }
