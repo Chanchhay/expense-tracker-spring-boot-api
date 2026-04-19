@@ -9,7 +9,7 @@ public class AuthCookieService {
     public ResponseCookie createAccessTokenCookie(String token, long maxAgeSeconds) {
         return ResponseCookie.from("access_token", token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(maxAgeSeconds)
@@ -19,7 +19,7 @@ public class AuthCookieService {
     public ResponseCookie createRefreshTokenCookie(String token, long maxAgeSeconds) {
         return ResponseCookie.from("refresh_token", token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(maxAgeSeconds)
@@ -29,7 +29,7 @@ public class AuthCookieService {
     public ResponseCookie clearAccessTokenCookie() {
         return ResponseCookie.from("access_token", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(0)
@@ -39,7 +39,7 @@ public class AuthCookieService {
     public ResponseCookie clearRefreshTokenCookie() {
         return ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(0)
