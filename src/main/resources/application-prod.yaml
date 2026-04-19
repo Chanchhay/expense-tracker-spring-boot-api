@@ -3,9 +3,9 @@ spring:
     name: Expense-tracker-web-app
   datasource:
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME:postgres}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    url: jdbc:postgresql://postgres.railway.internal:5432/railway
+    url: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}
   jpa:
     hibernate:
       ddl-auto: update
