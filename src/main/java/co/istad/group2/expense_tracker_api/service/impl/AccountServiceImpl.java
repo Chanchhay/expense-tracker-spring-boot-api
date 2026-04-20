@@ -35,7 +35,7 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
 
-        if (accountRepository.existsByNameIgnoreCaseAndUserAndCurrency(request.name().trim(), user, request.currency())) {
+        if (accountRepository.existsByNameIgnoreCaseAndUserAndCurrencyAndType(request.name().trim(), user, request.currency(), request.type())) {
             throw new ConflictException("Account already exists for this user");
         }
 
@@ -82,7 +82,7 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new NotFoundException("Account not found or does not belong to user"));
 
         if (!account.getName().equalsIgnoreCase(request.name().trim())
-                && accountRepository.existsByNameIgnoreCaseAndUserAndCurrency(request.name().trim(), user, request.currency())) {
+                && accountRepository.existsByNameIgnoreCaseAndUserAndCurrencyAndType(request.name().trim(), user, request.currency(), request.type())) {
             throw new ConflictException("Account already exists for this user");
         }
 
