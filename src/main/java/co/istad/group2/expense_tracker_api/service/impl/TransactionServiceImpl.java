@@ -150,12 +150,15 @@ public class TransactionServiceImpl implements TransactionService {
         String payee = request.source().trim().replaceAll("\\s+", " ");
         transaction.setSource(payee);
         if (request.images() != null) {
+            transaction.getImages().clear();  // remove all existing images first
             request.images().forEach(imageRequest -> {
                 TransactionImage image = new TransactionImage();
                 image.setImageUrl(imageRequest.imageUrl());
                 image.setImagePublicId(imageRequest.imagePublicId());
                 transaction.addImage(image);
             });
+        } else {
+            transaction.getImages().clear();  // clear if null (user removed all images)
         }
 
         applyTransactionEffect(newAccount, transaction.getType(), transaction.getAmount());
